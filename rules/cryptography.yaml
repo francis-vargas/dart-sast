@@ -1,0 +1,37 @@
+rules:
+  - id: DART-SEC-003
+    title: Weak Cryptographic Primitive
+    message: >
+      Usage of a broken or weak cryptographic algorithm (MD5, SHA-1, DES, RC4)
+      was detected. These algorithms are considered cryptographically broken
+      and must not be used for security-sensitive operations.
+    severity: HIGH
+    metadata:
+      cwe: CWE-327
+      owasp: "A02:2021 – Cryptographic Failures"
+      tags: [crypto, weak-algorithm]
+    suggestion: >
+      Use SHA-256 or SHA-3 for hashing and AES-GCM / ChaCha20-Poly1305 for
+      symmetric encryption.
+    pattern:
+      regex: \b(md5|sha1|sha-1|des\.encrypt|rc4|MD5|SHA1)\b
+      flags: IGNORECASE
+    languages: [dart]
+
+  - id: DART-SEC-004
+    title: Use of Cryptographically Insecure Randomness
+    message: >
+      dart:math Random() is a pseudo-random number generator (PRNG) and must
+      NOT be used for security-sensitive purposes such as token generation,
+      session IDs, or cryptographic keys.
+    severity: HIGH
+    metadata:
+      cwe: CWE-338
+      owasp: "A02:2021 – Cryptographic Failures"
+      tags: [crypto, randomness, prng]
+    suggestion: >
+      Use dart:math Random.secure() or the pointycastle CSPRNG for all
+      security contexts.
+    pattern:
+      regex: \bRandom\(\)
+    languages: [dart]

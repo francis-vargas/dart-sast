@@ -1,0 +1,35 @@
+rules:
+  - id: DART-SEC-002
+    title: Insecure HTTP URL (Non-TLS)
+    message: >
+      A plain HTTP URL was detected. Communication over HTTP is unencrypted
+      and susceptible to man-in-the-middle attacks and eavesdropping.
+    severity: HIGH
+    metadata:
+      cwe: CWE-319
+      owasp: "A02:2021 – Cryptographic Failures"
+      tags: [network, tls, http]
+    suggestion: >
+      Replace all http:// URLs with https:// and enable certificate pinning
+      for sensitive endpoints.
+    pattern:
+      regex: '["'']http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[^"'']+["'']'
+    languages: [dart]
+
+  - id: DART-SEC-009
+    title: TLS Certificate Validation Disabled
+    message: >
+      The TLS certificate validation callback always returns true, effectively
+      disabling certificate verification and exposing the app to MITM attacks.
+    severity: CRITICAL
+    metadata:
+      cwe: CWE-295
+      owasp: "A02:2021 – Cryptographic Failures"
+      tags: [network, tls, certificate, mitm]
+    suggestion: >
+      Remove the custom badCertificateCallback override and rely on the
+      platform trust store. Implement certificate pinning instead if custom
+      certificates are required.
+    pattern:
+      regex: badCertificateCallback\s*=.*=>\s*true
+    languages: [dart]

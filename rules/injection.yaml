@@ -1,0 +1,53 @@
+rules:
+  - id: DART-SEC-005
+    title: Potential SQL Injection
+    message: >
+      String interpolation or concatenation was detected inside a SQL query
+      string. This pattern can allow attackers to manipulate query logic,
+      extract data, or execute arbitrary commands.
+    severity: CRITICAL
+    metadata:
+      cwe: CWE-89
+      owasp: "A03:2021 – Injection"
+      tags: [injection, sql, database]
+    suggestion: >
+      Use parameterized queries / prepared statements provided by sqflite or
+      your ORM. Never interpolate user-controlled data directly into SQL strings.
+    pattern:
+      regex: (rawQuery|execute|query)\s*\(\s*["'].*\$\{?[a-zA-Z_]\w*\}?.*["']
+    languages: [dart]
+
+  - id: DART-SEC-010
+    title: Potential Path Traversal
+    message: >
+      User-controlled input is interpolated directly into a file path. This
+      can allow attackers to read or write arbitrary files on the device,
+      including sensitive app data and system files.
+    severity: HIGH
+    metadata:
+      cwe: CWE-22
+      owasp: "A01:2021 – Broken Access Control"
+      tags: [injection, path-traversal, filesystem]
+    suggestion: >
+      Validate and sanitize file path components. Use path.join() with an
+      allowlisted base directory and reject components containing '..'.
+    pattern:
+      regex: (File|Directory|open)\s*\(\s*["'][^"']*\$\{?[a-zA-Z_]\w*\}?
+    languages: [dart]
+
+  - id: DART-SEC-011
+    title: Exported Activity / Implicit Intent Data Exposure
+    message: >
+      Use of MethodChannel passing interpolated data without explicit component
+      targeting can expose data to other apps via implicit intents.
+    severity: MEDIUM
+    metadata:
+      cwe: CWE-926
+      owasp: "A04:2021 – Insecure Design"
+      tags: [android, intent, ipc, data-exposure]
+    suggestion: >
+      Always use explicit intents with package restriction. Avoid passing
+      sensitive data through extras; prefer secure IPC or encrypted payloads.
+    pattern:
+      regex: MethodChannel\(.*\)\.invokeMethod\(.*\$\{?[a-zA-Z_]\w*\}?
+    languages: [dart]
