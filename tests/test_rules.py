@@ -31,7 +31,7 @@ def write_tmp(content: str, suffix: str = ".dart") -> str:
 class TestRuleLoading:
     def test_loads_all_yaml_files(self):
         rules = load_rules_from_dir(RULES_DIR)
-        assert len(rules) == 12
+        assert len(rules) == 22
 
     def test_rules_have_required_fields(self):
         rules = load_rules_from_dir(RULES_DIR)
@@ -224,3 +224,83 @@ Future<void> main() async {
         rule_ids = {f.rule_id for f in findings}
         assert "DART-SEC-002" not in rule_ids   # https ok
         assert "DART-SEC-004" not in rule_ids   # Random.secure() ok
+
+
+# ── New rules (SEC-013 to SEC-022) ───────────────────────────────────────────
+
+class TestCommandInjection:
+    def test_detects_process_run_interpolation(self):
+        path = write_tmp("Process.run($userCommand, []);")
+        assert any(f.rule_id == "DART-SEC-013" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_detects_process_start(self):
+        path = write_tmp("Process.start($cmd, args);")
+        assert any(f.rule_id == "DART-SEC-013" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_ignores_fixed_command(self):
+        path = write_tmp('Process.run("flutter", ["build"]);')
+        assert not any(f.rule_id == "DART-SEC-013" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestSsrf:
+    def test_detects_http_get_user_input(self):
+        path = write_tmp("http.get(Uri.parse($userUrl));")
+        assert any(f.rule_id == "DART-SEC-014" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_detects_http_post_user_input(self):
+        path = write_tmp("http.post(Uri.parse($endpoint), body: data);")
+        assert any(f.rule_id == "DART-SEC-014" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestEcbMode:
+    def test_detects_ecb_block_cipher(self):
+        path = write_tmp("final cipher = ECBBlockCipher(AESEngine());")
+        assert any(f.rule_id == "DART-SEC-015" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_detects_aes_ecb_string(self):
+        path = write_tmp("final c = BlockCipher('AES/ECB');")
+        assert any(f.rule_id == "DART-SEC-015" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestJwtNone:
+    def test_detects_jwt_none_algorithm(self):
+        path = write_tmp("final token = JWT.sign(payload, algorithm: 'none');")
+        assert any(f.rule_id == "DART-SEC-016" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestCorsWildcard:
+    def test_detects_cors_wildcard(self):
+        path = write_tmp("response.headers.add('Access-Control-Allow-Origin', '*');")
+        assert any(f.rule_id == "DART-SEC-017" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestTokenInUrl:
+    def test_detects_token_in_query_param(self):
+        path = write_tmp('final url = "$baseUrl?token=$token";')
+        assert any(f.rule_id == "DART-SEC-018" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_detects_api_key_in_url(self):
+        path = write_tmp('final url = "$api?api_key=$apiKey";')
+        assert any(f.rule_id == "DART-SEC-018" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestAuthBackdoor:
+    def test_detects_hardcoded_password_comparison(self):
+        path = write_tmp('if (password == "admin123") { login(); }')
+        assert any(f.rule_id == "DART-SEC-019" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestWeakPasswordPolicy:
+    def test_detects_length_less_than_6(self):
+        path = write_tmp("if (password.length < 6) throw Exception();")
+        assert any(f.rule_id == "DART-SEC-021" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+    def test_ignores_length_8_or_more(self):
+        path = write_tmp("if (password.length < 8) throw Exception();")
+        assert not any(f.rule_id == "DART-SEC-021" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))
+
+
+class TestUnpinnedDependency:
+    def test_detects_any_version(self):
+        path = write_tmp("  some_package: any\n", suffix=".yaml")
+        assert any(f.rule_id == "DART-SEC-022" for f in analyze_file(path, load_rules_from_dir(RULES_DIR)))

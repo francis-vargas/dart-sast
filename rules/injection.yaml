@@ -51,3 +51,41 @@ rules:
     pattern:
       regex: MethodChannel\(.*\)\.invokeMethod\(.*\$\{?[a-zA-Z_]\w*\}?
     languages: [dart]
+
+  - id: DART-SEC-013
+    title: OS Command Injection via Process.run / Process.start
+    message: >
+      User-controlled input is passed directly to Process.run() or
+      Process.start(). An attacker can inject arbitrary shell commands,
+      leading to full system compromise.
+    severity: CRITICAL
+    metadata:
+      cwe: CWE-78
+      owasp: "A03:2021 – Injection"
+      tags: [injection, command-injection, os]
+    suggestion: >
+      Never pass user input as the executable path. Use a fixed allowlist of
+      commands and pass user data only as sanitized arguments, never as the
+      command itself.
+    pattern:
+      regex: Process\.(run|start|runSync)\s*\(\s*\$\{?[a-zA-Z_]\w*\}?
+    languages: [dart]
+
+  - id: DART-SEC-014
+    title: Server-Side Request Forgery (SSRF)
+    message: >
+      An HTTP request is made to a URL derived from user-controlled input.
+      An attacker can redirect the request to internal services, cloud metadata
+      endpoints, or other sensitive infrastructure.
+    severity: CRITICAL
+    metadata:
+      cwe: CWE-918
+      owasp: "A10:2021 – Server-Side Request Forgery"
+      tags: [ssrf, network, injection]
+    suggestion: >
+      Validate the target URL against a strict allowlist of permitted domains
+      before making the request. Never pass raw user input to http.get(),
+      http.post(), or HttpClient.
+    pattern:
+      regex: (http\.(get|post|put|delete|patch)|HttpClient\(\)\.(get|open)Url)\s*\(\s*(Uri\.parse\s*\()?\s*\$\{?[a-zA-Z_]\w*\}?
+    languages: [dart]

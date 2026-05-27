@@ -1,53 +1,91 @@
 rules:
-  - id: DART-SEC-005
-    title: Potential SQL Injection
+  - id: DART-SEC-007
+    title: Debug / Developer Mode Left Enabled
     message: >
-      String interpolation or concatenation was detected inside a SQL query
-      string. This pattern can allow attackers to manipulate query logic,
-      extract data, or execute arbitrary commands.
-    severity: CRITICAL
-    metadata:
-      cwe: CWE-89
-      owasp: "A03:2021 – Injection"
-      tags: [injection, sql, database]
-    suggestion: >
-      Use parameterized queries / prepared statements provided by sqflite or
-      your ORM. Never interpolate user-controlled data directly into SQL strings.
-    pattern:
-      regex: (rawQuery|execute|query)\s*\(\s*["'].*\$\{?[a-zA-Z_]\w*\}?.*["']
-    languages: [dart]
-
-  - id: DART-SEC-010
-    title: Potential Path Traversal
-    message: >
-      User-controlled input is interpolated directly into a file path. This
-      can allow attackers to read or write arbitrary files on the device,
-      including sensitive app data and system files.
-    severity: HIGH
-    metadata:
-      cwe: CWE-22
-      owasp: "A01:2021 – Broken Access Control"
-      tags: [injection, path-traversal, filesystem]
-    suggestion: >
-      Validate and sanitize file path components. Use path.join() with an
-      allowlisted base directory and reject components containing '..'.
-    pattern:
-      regex: (File|Directory|open)\s*\(\s*["'][^"']*\$\{?[a-zA-Z_]\w*\}?
-    languages: [dart]
-
-  - id: DART-SEC-011
-    title: Exported Activity / Implicit Intent Data Exposure
-    message: >
-      Use of MethodChannel passing interpolated data without explicit component
-      targeting can expose data to other apps via implicit intents.
+      Code enabling debug or developer mode was found. Shipping debug builds
+      leaks stack traces, verbose logs, and internal state to end users.
     severity: MEDIUM
     metadata:
-      cwe: CWE-926
-      owasp: "A04:2021 – Insecure Design"
-      tags: [android, intent, ipc, data-exposure]
+      cwe: CWE-215
+      owasp: "A05:2021 – Security Misconfiguration"
+      tags: [debug, misconfiguration, build]
     suggestion: >
-      Always use explicit intents with package restriction. Avoid passing
-      sensitive data through extras; prefer secure IPC or encrypted payloads.
+      Use flutter --release for production builds. Guard debug-only code
+      with kDebugMode checks so it is compiled out in release mode.
     pattern:
-      regex: MethodChannel\(.*\)\.invokeMethod\(.*\$\{?[a-zA-Z_]\w*\}?
+      regex: \b(debugMode\s*=\s*true|kDebugMode\s*==\s*true|assert\(false\))
     languages: [dart]
+
+  - id: DART-SEC-012
+    title: Potentially Outdated Flutter / Dart SDK Constraint
+    message: >
+      The pubspec.yaml specifies a very old minimum SDK version. Older SDK
+      versions may lack security patches and modern API safeguards.
+    severity: LOW
+    metadata:
+      cwe: CWE-1104
+      owasp: "A06:2021 – Vulnerable and Outdated Components"
+      tags: [dependency, sdk, outdated]
+    suggestion: >
+      Update the sdk constraint to >=3.0.0 and run flutter upgrade to pull
+      in security fixes from recent SDK releases.
+    pattern:
+      regex: 'sdk\s*:\s*["'']>=\s*[01]\.\d+\.\d+'
+    languages: [yaml]
+
+  - id: DART-SEC-020
+    title: Stack Trace Exposed to Client
+    message: >
+      A stack trace or exception detail is being written directly to the HTTP
+      response. This leaks internal file paths, class names, and line numbers
+      to potential attackers, aiding reconnaissance.
+    severity: MEDIUM
+    metadata:
+      cwe: CWE-209
+      owasp: "A05:2021 – Security Misconfiguration"
+      tags: [error-handling, information-disclosure, misconfiguration]
+    suggestion: >
+      Return a generic error message to the client (e.g. "Internal Server
+      Error") and log the full exception server-side only.
+    pattern:
+      regex: response\.(write|send)\s*\(.*\.(toString|stackTrace)\s*\(
+    languages: [dart]
+
+  - id: DART-SEC-021
+    title: Weak Password Policy — Minimum Length Too Short
+    message: >
+      A password length check requires fewer than 8 characters. Short passwords
+      are trivially brute-forced. NIST SP 800-63B recommends a minimum of
+      8 characters for memorized secrets.
+    severity: MEDIUM
+    metadata:
+      cwe: CWE-521
+      owasp: "A07:2021 – Identification and Authentication Failures"
+      tags: [authentication, password-policy, validation]
+    suggestion: >
+      Enforce a minimum password length of at least 8 characters (12+
+      recommended). Consider also checking against known-breached password
+      lists (e.g. HaveIBeenPwned API).
+    pattern:
+      regex: (password|passwd|pin)\.length\s*<\s*[1-7]\b
+      flags: IGNORECASE
+    languages: [dart]
+
+  - id: DART-SEC-022
+    title: Unpinned Dependency Version in pubspec.yaml
+    message: >
+      A dependency is declared with 'any' as its version constraint. This
+      allows pub get to install any version, including future releases that
+      may introduce breaking changes or supply-chain vulnerabilities.
+    severity: LOW
+    metadata:
+      cwe: CWE-1104
+      owasp: "A06:2021 – Vulnerable and Outdated Components"
+      tags: [dependency, supply-chain, pubspec]
+    suggestion: >
+      Pin dependencies to explicit version ranges (e.g. ^2.3.1) and use
+      dart pub upgrade --major-versions consciously. Consider flutter_pub_version_check
+      to audit for known vulnerable versions.
+    pattern:
+      regex: ':\s*any\s*$'
+    languages: [yaml]

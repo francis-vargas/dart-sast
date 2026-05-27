@@ -31,5 +31,43 @@ rules:
       platform trust store. Implement certificate pinning instead if custom
       certificates are required.
     pattern:
-      regex: badCertificateCallback\s*=.*=>\s*true
+      regex: (badCertificateCallback|onBadCertificate)\s*[=:]\s*(\(.*\)|_)\s*=>\s*true
+    languages: [dart]
+
+  - id: DART-SEC-017
+    title: CORS Wildcard Allows Any Origin
+    message: >
+      The Access-Control-Allow-Origin header is set to '*', allowing any
+      website to make cross-origin requests to this API and read the response.
+      This can expose sensitive user data to malicious sites.
+    severity: HIGH
+    metadata:
+      cwe: CWE-942
+      owasp: "A05:2021 – Security Misconfiguration"
+      tags: [cors, network, misconfiguration]
+    suggestion: >
+      Restrict Access-Control-Allow-Origin to an explicit list of trusted
+      origins. Never use '*' on endpoints that handle authenticated sessions
+      or sensitive data.
+    pattern:
+      regex: Access-Control-Allow-Origin['"]\s*,\s*['"][*]
+    languages: [dart]
+
+  - id: DART-SEC-018
+    title: Session Token or API Key Exposed in URL
+    message: >
+      A session token, API key, or credential is being appended to a URL as a
+      query parameter. URLs are stored in server logs, browser history, and
+      referrer headers — exposing the secret to anyone with log access.
+    severity: HIGH
+    metadata:
+      cwe: CWE-598
+      owasp: "A07:2021 – Identification and Authentication Failures"
+      tags: [authentication, token, url, exposure]
+    suggestion: >
+      Pass credentials in the Authorization HTTP header (e.g.
+      'Authorization: Bearer $token') instead of URL query parameters.
+    pattern:
+      regex: \?\s*(token|api_?key|session_?id|access_?token)\s*=\s*\$
+      flags: IGNORECASE
     languages: [dart]
