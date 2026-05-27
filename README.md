@@ -3,9 +3,9 @@
 > **Static Application Security Testing (SAST) for Dart / Flutter**
 > Ferramenta CLI que analisa código-fonte Dart/Flutter em busca de 22 padrões de vulnerabilidade conhecidos, com saída em console, JSON, HTML, SARIF e DefectDojo.
 
-[![CI](https://github.com/seu-usuario/dart-sast/actions/workflows/ci.yml/badge.svg)](https://github.com/seu-usuario/dart-sast/actions)
+[![CI](https://github.com/francis-vargas/dart-sast/actions/workflows/ci.yml/badge.svg)](https://github.com/francis-vargas/dart-sast/actions)
 [![PyPI](https://img.shields.io/pypi/v/dart-sast)](https://pypi.org/project/dart-sast/)
-[![Docker](https://ghcr.io/seu-usuario/dart-sast)](https://github.com/seu-usuario/dart-sast/pkgs/container/dart-sast)
+[![Docker Pulls](https://img.shields.io/docker/pulls/francisvargas/dart-sast)](https://hub.docker.com/r/francisvargas/dart-sast)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
@@ -27,7 +27,7 @@ Aplicações Flutter estão presentes em bilhões de dispositivos móveis. Entre
 
 ## Instalação
 
-### pip (recomendado)
+### pip
 
 ```bash
 pip install dart-sast
@@ -37,20 +37,20 @@ pip install dart-sast
 
 ```bash
 # Escanear projeto atual
-docker run --rm -v $(pwd):/src ghcr.io/seu-usuario/dart-sast /src
+docker run --rm -v $(pwd):/src francisvargas/dart-sast /src
 
 # Gerar relatório HTML
 docker run --rm \
   -v $(pwd):/src \
   -v $(pwd)/reports:/reports \
-  ghcr.io/seu-usuario/dart-sast \
+  francisvargas/dart-sast \
   /src --output html --out-file /reports/report.html
 
 # Usar regras customizadas
 docker run --rm \
   -v $(pwd):/src \
   -v $(pwd)/my-rules:/rules \
-  ghcr.io/seu-usuario/dart-sast \
+  francisvargas/dart-sast \
   /src --rules-dir /rules
 ```
 
@@ -59,7 +59,7 @@ docker run --rm \
 ```yaml
 # .github/workflows/security.yml
 - name: Run dart_sast
-  uses: seu-usuario/dart-sast@v1
+  uses: francis-vargas/dart-sast@v1
   with:
     path: .
     output: sarif
@@ -75,7 +75,7 @@ docker run --rm \
 ### Código-fonte
 
 ```bash
-git clone https://github.com/seu-usuario/dart-sast.git
+git clone https://github.com/francis-vargas/dart-sast.git
 cd dart-sast
 pip install -e ".[dev]"
 ```
@@ -173,14 +173,12 @@ json.dump(dojo_payload, open("dojo.json", "w"), indent=2)
 
 ### Escrevendo regras customizadas
 
-Crie um arquivo `.yaml` em qualquer diretório:
-
 ```yaml
 rules:
   - id: MY-RULE-001
     title: Minha Regra Customizada
     message: Descrição do problema encontrado.
-    severity: HIGH          # CRITICAL | HIGH | MEDIUM | LOW | INFO
+    severity: HIGH
     metadata:
       cwe: CWE-XX
       owasp: "A01:2021"
@@ -188,8 +186,8 @@ rules:
     suggestion: Como corrigir.
     pattern:
       regex: 'padrao_perigoso\(\)'
-      flags: IGNORECASE     # opcional
-    languages: [dart]       # dart | yaml
+      flags: IGNORECASE
+    languages: [dart]
 ```
 
 ```bash
@@ -216,34 +214,33 @@ dart-sast ./projeto --output defectdojo --out-file findings.json
 - **Python** ≥ 3.9
 - **pyyaml** ≥ 6.0
 
-Sem dependências externas adicionais.
-
 ---
 
 ## Estrutura do Repositório
 
 ```
 dart-sast/
-├── Dockerfile                       # Imagem Docker
-├── action.yml                       # GitHub Action
-├── pyproject.toml                   # Configuração PyPI
+├── Dockerfile
+├── .dockerignore
+├── action.yml                       ← GitHub Action
+├── pyproject.toml                   ← PyPI
 ├── dart_sast/
 │   ├── __init__.py
-│   ├── __main__.py                  # CLI
-│   ├── analyzer.py                  # Engine + loader de regras YAML
-│   └── reporter.py                  # HTML / SARIF / DefectDojo / JSON
+│   ├── __main__.py                  ← CLI
+│   ├── analyzer.py                  ← Engine + loader de regras YAML
+│   └── reporter.py                  ← HTML / SARIF / DefectDojo / JSON
 ├── rules/
-│   ├── secrets.yaml                 # SEC-001, 006, 008, 019
-│   ├── cryptography.yaml            # SEC-003, 004, 015, 016
-│   ├── network.yaml                 # SEC-002, 009, 017, 018
-│   ├── injection.yaml               # SEC-005, 010, 011, 013, 014
-│   └── misconfiguration.yaml        # SEC-007, 012, 020, 021, 022
+│   ├── secrets.yaml
+│   ├── cryptography.yaml
+│   ├── network.yaml
+│   ├── injection.yaml
+│   └── misconfiguration.yaml
 ├── tests/
-│   ├── test_rules.py                # 41 testes unitários
-│   └── samples/vulnerable_app.dart  # Código vulnerável para demo
+│   ├── test_rules.py                ← 41 testes unitários
+│   └── samples/vulnerable_app.dart
 └── .github/workflows/
-    ├── ci.yml                       # CI: testes + Docker + PyPI
-    └── example-usage.yml            # Exemplo de uso em projetos externos
+    ├── ci.yml
+    └── example-usage.yml
 ```
 
 ---
@@ -263,10 +260,18 @@ Resultado esperado: **41 passed**.
 
 | Critério | Como este artefato atende |
 |---|---|
-| **Disponibilidade** | Código aberto no GitHub (MIT); imagem no GHCR; pacote no PyPI |
+| **Disponibilidade** | Código aberto no GitHub (MIT); imagem no DockerHub e GHCR; pacote no PyPI |
 | **Funcionalidade** | 22 regras, 5 formatos de saída, GitHub Action, biblioteca Python, 41 testes |
 | **Sustentabilidade** | Regras em YAML extensíveis sem alterar Python; CI automatizado; versionamento semântico |
-| **Reprodutibilidade** | `pip install dart-sast` ou `docker run` reproduz resultados; amostra vulnerável inclusa |
+| **Reprodutibilidade** | `pip install dart-sast` ou `docker run francisvargas/dart-sast` reproduz resultados; amostra vulnerável inclusa |
+
+---
+
+## Links
+
+- **GitHub:** https://github.com/francis-vargas/dart-sast
+- **PyPI:** https://pypi.org/project/dart-sast/
+- **DockerHub:** https://hub.docker.com/r/francisvargas/dart-sast
 
 ---
 
@@ -274,9 +279,9 @@ Resultado esperado: **41 passed**.
 
 - OWASP Mobile Security Testing Guide: https://owasp.org/www-project-mobile-security-testing-guide/
 - CWE/SANS Top 25: https://cwe.mitre.org/top25/
-- NIST SP 800-63B (Password Guidelines): https://pages.nist.gov/800-63-3/sp800-63b.html
+- NIST SP 800-63B: https://pages.nist.gov/800-63-3/sp800-63b.html
 - SARIF 2.1.0 Specification: https://docs.oasis-open.org/sarif/sarif/v2.1.0/
-- Semgrep JSON Schema (DefectDojo): https://semgrep.dev/docs/semgrep-ci/findings/
+- Semgrep JSON Schema: https://semgrep.dev/docs/semgrep-ci/findings/
 - Flutter Secure Storage: https://pub.dev/packages/flutter_secure_storage
 
 ## Licença
