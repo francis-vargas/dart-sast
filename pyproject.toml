@@ -3,27 +3,48 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dart_sast"
+name = "dart-sast"
 version = "1.0.0"
 description = "Static Application Security Testing (SAST) for Dart/Flutter codebases"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-keywords = ["security", "sast", "dart", "flutter", "static-analysis"]
+keywords = ["security", "sast", "dart", "flutter", "static-analysis", "devsecops"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = [
+  "pyyaml>=6.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7", "pytest-cov"]
 
 [project.scripts]
-dart_sast = "dart_sast.__main__:main"
+dart-sast = "dart_sast.__main__:main"
+
+[project.urls]
+Homepage      = "https://github.com/seu-usuario/dart-sast"
+Documentation = "https://github.com/seu-usuario/dart-sast#readme"
+Issues        = "https://github.com/seu-usuario/dart-sast/issues"
+Changelog     = "https://github.com/seu-usuario/dart-sast/releases"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dart_sast*"]
+
+[tool.setuptools.package-data]
+dart_sast = ["../rules/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,99 @@
+name: dart_sast
+description: Static Application Security Testing for Dart/Flutter projects
+author: seu-usuario
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  path:
+    description: Directory or file to scan
+    required: false
+    default: "."
+  severity:
+    description: Minimum severity to report (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+    required: false
+    default: ""
+  output:
+    description: Output format (console, json, html, sarif, defectdojo)
+    required: false
+    default: sarif
+  out-file:
+    description: Output file path
+    required: false
+    default: dart_sast_results.sarif
+  fail-on:
+    description: Exit with code 1 if any finding meets this severity (CRITICAL, HIGH, MEDIUM, LOW)
+    required: false
+    default: CRITICAL
+  rules-dir:
+    description: Path to custom YAML rules directory (overrides built-in rules)
+    required: false
+    default: ""
+  exclude-dir:
+    description: Comma-separated list of directory names to exclude
+    required: false
+    default: ""
+
+outputs:
+  findings-count:
+    description: Total number of findings
+    value: ${{ steps.scan.outputs.findings_count }}
+  sarif-file:
+    description: Path to the generated SARIF file (when output=sarif)
+    value: ${{ inputs.out-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dart_sast
+      shell: bash
+      run: pip install pyyaml
+
+    - name: Run dart_sast
+      id: scan
+      shell: bash
+      env:
+        INPUT_PATH:       ${{ inputs.path }}
+        INPUT_SEVERITY:   ${{ inputs.severity }}
+        INPUT_OUTPUT:     ${{ inputs.output }}
+        INPUT_OUTFILE:    ${{ inputs.out-file }}
+        INPUT_FAILON:     ${{ inputs.fail-on }}
+        INPUT_RULES_DIR:  ${{ inputs.rules-dir }}
+        INPUT_EXCLUDE:    ${{ inputs.exclude-dir }}
+      run: |
+        ACTION_DIR="${{ github.action_path }}"
+        ARGS=("$INPUT_PATH" "--output" "$INPUT_OUTPUT" "--out-file" "$INPUT_OUTFILE")
+
+        if [ -n "$INPUT_SEVERITY" ];  then ARGS+=("--severity"   "$INPUT_SEVERITY");  fi
+        if [ -n "$INPUT_FAILON" ];    then ARGS+=("--fail-on"    "$INPUT_FAILON");    fi
+        if [ -n "$INPUT_RULES_DIR" ]; then ARGS+=("--rules-dir"  "$INPUT_RULES_DIR"); fi
+
+        if [ -n "$INPUT_EXCLUDE" ]; then
+          IFS=',' read -ra DIRS <<< "$INPUT_EXCLUDE"
+          for dir in "${DIRS[@]}"; do
+            ARGS+=("--exclude-dir" "$(echo $dir | xargs)")
+          done
+        fi
+
+        cd "$ACTION_DIR"
+        python -m dart_sast "${ARGS[@]}"
+
+        # Count findings from JSON output for the output variable
+        if command -v python3 &>/dev/null && [ "$INPUT_OUTPUT" = "sarif" ] && [ -f "$INPUT_OUTFILE" ]; then
+          COUNT=$(python3 -c "
+        import json, sys
+        try:
+            d = json.load(open('$INPUT_OUTFILE'))
+            print(len(d['runs'][0]['results']))
+        except:
+            print(0)
+        ")
+          echo "findings_count=$COUNT" >> "$GITHUB_OUTPUT"
+        fi
